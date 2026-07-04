@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TenderCheck — BDL Compliance Analyzer</title>
+<meta name="description" content="Bharat Dynamics Limited TenderCheck — AI-powered tender compliance analysis with semantic matching"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f2557;--navy-deep:#09193d;--blue:#1d4ed8;--blue-hover:#1e40af;
+  --blue-light:#eff6ff;--g-bg:#f0f4f8;--g-card:#fff;--g-border:#e2e8f0;
+  --g-text:#1e293b;--g-muted:#64748b;--g-hint:#94a3b8;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
+  --amber:#d97706;--amber-bg:#fffbeb;--amber-bd:#fde68a;
+  --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
+  --bar-g:#22c55e;--bar-a:#f59e0b;--bar-r:#ef4444;
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--g-bg);color:var(--g-text);min-height:100vh}
+
+/* HEADER */
+.hdr{
+  background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 60%,#1a3a8f 100%);
+  padding:14px 24px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,.2);
+}
+.hdr-icon{font-size:22px}
+.hdr-title{color:#fff;font-weight:700;font-size:17px}
+.hdr-sub{color:#93c5fd;font-size:11px;margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.user-pill{
+  background:rgba(255,255,255,.1);color:#e2e8f0;
+  border:1px solid rgba(255,255,255,.15);border-radius:20px;
+  padding:5px 12px;font-size:11px;font-weight:500;
+}
+.hdr-btn{
+  display:none;align-items:center;gap:6px;
+  background:rgba(255,255,255,.1);color:#e2e8f0;
+  border:1px solid rgba(255,255,255,.2);border-radius:var(--radius-sm);
+  padding:7px 14px;cursor:pointer;font-size:12px;font-family:inherit;
+  transition:background .2s;
+}
+.hdr-btn:hover{background:rgba(255,255,255,.18)}
+.hdr-link{
+  color:#93c5fd;font-size:11px;text-decoration:none;font-weight:500;
+  border:1px solid rgba(147,197,253,.3);border-radius:var(--radius-sm);padding:5px 10px;
+  transition:all .2s;
+}
+.hdr-link:hover{background:rgba(147,197,253,.1)}
+.logout-btn{
+  background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;
+  font-family:inherit;padding:5px 8px;border-radius:var(--radius-sm);
+  transition:color .2s;
+}
+.logout-btn:hover{color:#f87171}
+
+/* STEPPER */
+.steps{
+  background:#fff;border-bottom:1px solid var(--g-border);
+  padding:10px 24px;display:flex;gap:20px;align-items:center;
+}
+.step{display:flex;align-items:center;gap:7px}
+.step-dot{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--g-border);color:var(--g-hint);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:12px;transition:all .3s;flex-shrink:0;
+}
+.step-dot.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(29,78,216,.4)}
+.step-dot.done{background:var(--green);color:#fff}
+.step-lbl{font-size:12px;color:var(--g-hint)}
+.step-lbl.active{color:var(--g-text);font-weight:600}
+.step-sep{color:var(--g-border);font-size:14px}
+
+/* MAIN */
+.main{padding:20px;max-width:1100px;margin:0 auto}
+
+/* PANELS */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+@media(max-width:620px){.panels{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:var(--radius);border:1px solid var(--g-border);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.panel-hdr{padding:12px 16px;border-bottom:1px solid var(--g-border);display:flex;align-items:center;gap:9px}
+.panel-icon{font-size:18px}
+.panel-title{font-weight:600;font-size:13px}
+.panel-sub{color:var(--g-hint);font-size:11px;margin-top:1px}
+.loaded-badge{margin-left:auto;background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.tabs{display:flex;border-bottom:1px solid var(--g-border)}
+.tab{flex:1;padding:8px;background:none;border:none;border-bottom:2px solid transparent;font-size:12px;cursor:pointer;font-family:inherit;color:var(--g-hint);transition:all .15s}
+.tab.on{background:#f8fafc;font-weight:600}
+.panel-body{padding:14px}
+.dropzone{
+  border:2px dashed var(--g-border);border-radius:var(--radius-sm);
+  padding:28px 16px;text-align:center;cursor:pointer;
+  background:#fafafa;transition:all .2s;
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:var(--blue-light)}
+.dropzone-icon{font-size:26px;margin-bottom:8px}
+.dropzone-main{font-size:13px;font-weight:500;color:var(--g-muted)}
+.dropzone-sub{font-size:11px;color:var(--g-hint);margin-top:3px}
+.dropzone.has-file .dropzone-main{color:var(--g-text)}
+textarea.spec{
+  width:100%;min-height:150px;padding:10px;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  font-size:12px;color:var(--g-text);resize:vertical;
+  font-family:inherit;outline:none;line-height:1.6;background:#fff;
+}
+textarea.spec:focus{border-color:var(--blue)}
+.word-count{font-size:10px;color:var(--g-hint);margin-top:5px}
+
+/* Title field */
+.title-field{margin-bottom:14px}
+.title-field label{font-size:11px;font-weight:600;color:var(--g-muted);display:block;margin-bottom:4px}
+.title-field input{
+  width:100%;padding:8px 12px;border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  font-size:13px;font-family:inherit;color:var(--g-text);outline:none;background:#fff;
+}
+.title-field input:focus{border-color:var(--blue)}
+
+/* ACTIONS */
+.actions{text-align:center}
+.btn-sample{background:#fff;border:1px solid var(--g-border);border-radius:var(--radius-sm);padding:7px 16px;color:var(--g-muted);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:12px}
+.btn-sample:hover{background:#f8fafc}
+.btn-analyze{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+  color:#fff;border:none;border-radius:var(--radius);
+  padding:13px 36px;font-size:15px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .2s;
+  box-shadow:0 4px 14px rgba(29,78,216,.35);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-analyze:disabled{background:var(--g-border);color:var(--g-hint);box-shadow:none;cursor:not-allowed}
+.btn-analyze:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,78,216,.45)}
+.btn-analyze:active{transform:translateY(0)}
+.hint{margin-top:9px;font-size:12px;color:var(--g-hint)}
+
+/* AI badge */
+.ai-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  color:#fff;font-size:10px;font-weight:600;
+  padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
+}
+
+/* SPINNER */
+.spinner-wrap{background:#fff;border-radius:var(--radius);border:1px solid var(--g-border);padding:70px 20px;text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{
+  width:52px;height:52px;border-radius:50%;
+  border:3px solid var(--g-border);border-top-color:var(--blue);
+  margin:0 auto 20px;animation:spin .9s linear infinite;
+}
+.spinner-title{font-size:18px;font-weight:600;color:var(--g-text)}
+.spinner-sub{color:var(--g-muted);margin-top:8px;font-size:13px}
+.spinner-steps{margin-top:16px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.spinner-step{font-size:11px;color:var(--g-hint);display:flex;align-items:center;gap:6px}
+.spinner-step .dot{width:6px;height:6px;border-radius:50%;background:var(--g-border)}
+.spinner-step.cur .dot{background:var(--blue);animation:pulse 1s ease-in-out infinite}
+.spinner-step.done .dot{background:var(--green)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+
+/* RESULTS */
+.summary{display:grid;grid-template-columns:170px 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:580px){.summary{grid-template-columns:1fr}}
+.score-card{
+  background:#fff;border-radius:var(--radius);border:1px solid var(--g-border);
+  padding:20px 14px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.score-num{font-size:54px;font-weight:700;line-height:1}
+.score-lbl{font-size:12px;color:var(--g-muted);margin-top:5px}
+.score-badge{margin-top:10px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block}
+.breakdown-card{background:#fff;border-radius:var(--radius);border:1px solid var(--g-border);padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.breakdown-title{font-weight:600;font-size:13px;color:var(--g-text);margin-bottom:14px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-box{border-radius:var(--radius-sm);padding:12px;text-align:center}
+.stat-num{font-size:32px;font-weight:700}
+.stat-lbl{font-size:11px;font-weight:600;margin-top:3px}
+.bar-stack{height:7px;border-radius:4px;background:#f1f5f9;overflow:hidden;display:flex}
+.bar-seg{transition:width .8s ease}
+.bar-legend{display:flex;gap:14px;margin-top:8px;font-size:10px;color:var(--g-hint)}
+
+/* CLAUSES */
+.clause-hdr{display:flex;align-items:center;margin-bottom:12px;gap:10px}
+.clause-hdr-title{font-weight:700;font-size:15px}
+.btn-copy{
+  display:flex;align-items:center;gap:5px;
+  background:#fff;border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  padding:7px 14px;cursor:pointer;font-size:12px;font-family:inherit;color:var(--g-muted);
+  transition:all .15s;
+}
+.btn-copy:hover{background:#f8fafc}
+.btn-copy.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.clauses{display:flex;flex-direction:column;gap:7px}
+.clause{background:#fff;border:1px solid var(--g-border);border-radius:0 var(--radius) var(--radius) 0;overflow:hidden;transition:box-shadow .2s}
+.clause:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.clause-btn{width:100%;background:none;border:none;padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;text-align:left;font-family:inherit}
+.clause-btn:hover{background:#f8fafc}
+.clause-id{width:26px;height:26px;border-radius:50%;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.clause-text{flex:1;font-size:12px;color:var(--g-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clause-text.open{white-space:normal}
+.clause-score{padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600;flex-shrink:0;white-space:nowrap}
+.clause-chevron{font-size:14px;color:var(--g-hint);flex-shrink:0}
+.clause-detail{padding:0 14px 14px;border-top:1px solid #f8fafc}
+.clause-full{color:var(--g-muted);font-size:12px;line-height:1.7;margin:10px 0}
+.best-match{
+  background:#faf5ff;border:1px solid #e9d5ff;border-radius:var(--radius-sm);
+  padding:10px 12px;font-size:11px;color:#7c3aed;margin-bottom:10px;line-height:1.6;
+}
+.best-match-lbl{font-weight:700;font-size:10px;color:#6d28d9;margin-bottom:4px}
+.terms-row{display:flex;gap:16px;flex-wrap:wrap}
+.terms-group-lbl{font-size:10px;font-weight:700;margin-bottom:5px}
+.terms-list{display:flex;gap:4px;flex-wrap:wrap}
+.term-tag{padding:2px 7px;border-radius:4px;font-size:10px}
+
+/* Save indicator */
+.save-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--green-bg);color:var(--green);
+  border:1px solid var(--green-bd);border-radius:10px;
+  font-size:10px;font-weight:600;padding:2px 8px;margin-left:auto;
+}
+
+/* Error toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:#1e293b;color:#fff;border-radius:10px;
+  padding:12px 20px;font-size:13px;font-weight:500;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:999;
+  display:none;align-items:center;gap:8px;max-width:90%;
+}
+.toast.show{display:flex;animation:toastIn .3s ease}
+@keyframes toastIn{from{opacity:0;bottom:8px}to{opacity:1;bottom:24px}}
+
+/* FOOTER */
+.footer{background:#fff;border-top:1px solid var(--g-border);padding:10px 24px;font-size:11px;color:var(--g-hint)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <span class="hdr-icon">🛡️</span>
+  <div>
+    <div class="hdr-title">TenderCheck <span class="ai-badge">✦ AI</span></div>
+    <div class="hdr-sub">Bharat Dynamics Limited · Tender Compliance Analyzer</div>
+  </div>
+  <div class="hdr-right">
+    <span class="user-pill" id="userPill">👤 —</span>
+    <a class="hdr-link" href="reports.html">📁 Reports</a>
+    <button class="hdr-btn" id="resetBtn" onclick="resetApp()" style="display:flex">↺ New analysis</button>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<!-- STEPPER -->
+<div class="steps">
+  <div class="step">
+    <div class="step-dot active" id="dot1">1</div>
+    <span class="step-lbl active" id="lbl1">Upload</span>
+  </div>
+  <span class="step-sep">›</span>
+  <div class="step">
+    <div class="step-dot" id="dot2">2</div>
+    <span class="step-lbl" id="lbl2">Processing</span>
+  </div>
+  <span class="step-sep">›</span>
+  <div class="step">
+    <div class="step-dot" id="dot3">3</div>
+    <span class="step-lbl" id="lbl3">Report</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STEP 1 -->
+  <div id="step1">
+    <div class="title-field">
+      <label for="reportTitle">Analysis title</label>
+      <input id="reportTitle" type="text" placeholder="e.g. Missile Guidance Components RFQ — June 2024"/>
+    </div>
+
+    <div class="panels">
+      <!-- Tender panel -->
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-icon">📄</span>
+          <div>
+            <div class="panel-title">Tender document</div>
+            <div class="panel-sub">BDL RFQ or tender PDF</div>
+          </div>
+          <span class="loaded-badge" id="tLoaded" style="display:none">✓ Loaded</span>
+        </div>
+        <div class="tabs">
+          <button class="tab on" id="tTab-upload" onclick="switchTab('t','upload')">📎 Upload PDF</button>
+          <button class="tab" id="tTab-paste" onclick="switchTab('t','paste')">📝 Paste text</button>
+        </div>
+        <div class="panel-body">
+          <div id="tUpload">
+            <div class="dropzone" id="tDrop" onclick="document.getElementById('tFile').click()"
+              ondragover="doDragOver(event,'tDrop')" ondragleave="doDragLeave('tDrop')" ondrop="doDropT(event)">
+              <input type="file" id="tFile" accept=".pdf,.txt" style="display:none" onchange="handleFileT(this.files[0])"/>
+              <div class="dropzone-icon">⬆️</div>
+              <div class="dropzone-main" id="tDropMain">Drop file or click to browse</div>
+              <div class="dropzone-sub" id="tDropSub">PDF and TXT supported</div>
+            </div>
+          </div>
+          <div id="tPaste" style="display:none">
+            <textarea class="spec" id="tText" placeholder="Paste tender requirements here…" oninput="onTenderInput()"></textarea>
+          </div>
+          <div class="word-count" id="tWords" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Vendor panel -->
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-icon">🏭</span>
+          <div>
+            <div class="panel-title">Vendor specifications</div>
+            <div class="panel-sub">Your product capabilities</div>
+          </div>
+          <span class="loaded-badge" id="vLoaded" style="display:none">✓ Loaded</span>
+        </div>
+        <div class="tabs">
+          <button class="tab" id="vTab-upload" onclick="switchTab('v','upload')">📎 Upload PDF</button>
+          <button class="tab on" id="vTab-paste" onclick="switchTab('v','paste')">📝 Paste text</button>
+        </div>
+        <div class="panel-body">
+          <div id="vUpload" style="display:none">
+            <div class="dropzone" id="vDrop" onclick="document.getElementById('vFile').click()"
+              ondragover="doDragOver(event,'vDrop')" ondragleave="doDragLeave('vDrop')" ondrop="doDropV(event)">
+              <input type="file" id="vFile" accept=".pdf,.txt" style="display:none" onchange="handleFileV(this.files[0])"/>
+              <div class="dropzone-icon">⬆️</div>
+              <div class="dropzone-main" id="vDropMain">Drop file or click to browse</div>
+              <div class="dropzone-sub">PDF and TXT supported</div>
+            </div>
+          </div>
+          <div id="vPaste">
+            <textarea class="spec" id="vText" placeholder="Paste vendor specifications here…" oninput="onVendorInput()"></textarea>
+          </div>
+          <div class="word-count" id="vWords" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div><button class="btn-sample" onclick="loadSample()">📦 Load sample data</button></div>
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyze()" disabled>
+        ✦ Analyze compliance
+      </button>
+      <div class="hint" id="analyzeHint">Both documents are required</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" style="display:none">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <div class="spinner-title">Analyzing requirements</div>
+      <div class="spinner-sub">Semantic AI matching with all-MiniLM-L6-v2</div>
+      <div class="spinner-steps">
+        <div class="spinner-step done" id="ss1"><div class="dot"></div>Extracting requirement clauses</div>
+        <div class="spinner-step cur" id="ss2"><div class="dot"></div>Encoding semantic embeddings</div>
+        <div class="spinner-step" id="ss3"><div class="dot"></div>Scoring & persisting report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" style="display:none">
+    <div class="summary">
+      <div class="score-card">
+        <div class="score-num" id="scoreNum">—</div>
+        <div class="score-lbl">overall compliance</div>
+        <div class="score-badge" id="scoreBadge"></div>
+      </div>
+      <div class="breakdown-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <div class="breakdown-title" id="breakdownTitle" style="margin-bottom:0">Requirement breakdown</div>
+          <span class="save-chip" id="saveChip" style="display:none">💾 Saved to reports</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box" style="background:var(--green-bg);border:1px solid var(--green-bd)">
+            <div class="stat-num" style="color:var(--green)" id="cntC">0</div>
+            <div class="stat-lbl" style="color:var(--green)">Compliant</div>
+          </div>
+          <div class="stat-box" style="background:var(--amber-bg);border:1px solid var(--amber-bd)">
+            <div class="stat-num" style="color:var(--amber)" id="cntP">0</div>
+            <div class="stat-lbl" style="color:var(--amber)">Partially met</div>
+          </div>
+          <div class="stat-box" style="background:var(--red-bg);border:1px solid var(--red-bd)">
+            <div class="stat-num" style="color:var(--red)" id="cntN">0</div>
+            <div class="stat-lbl" style="color:var(--red)">Not addressed</div>
+          </div>
+        </div>
+        <div class="bar-stack">
+          <div class="bar-seg" id="barC" style="background:var(--bar-g)"></div>
+          <div class="bar-seg" id="barP" style="background:var(--bar-a)"></div>
+          <div class="bar-seg" id="barN" style="background:var(--bar-r)"></div>
+        </div>
+        <div class="bar-legend">
+          <span style="color:var(--green)">■ Compliant</span>
+          <span style="color:var(--amber)">■ Partially met</span>
+          <span style="color:var(--red)">■ Not addressed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="clause-hdr">
+      <span class="clause-hdr-title">Clause-by-clause analysis</span>
+      <button class="btn-copy" id="copyBtn" onclick="copyReport()">📋 Copy report</button>
+    </div>
+    <div class="clauses" id="clauseList"></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  ✦ Powered by sentence-transformers/all-MiniLM-L6-v2 · Semantic AI matching ·
+  🔒 All processing server-side · Reports stored in local SQLite
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+
+// ── Auth guard ───────────────────────────────────────────────────────────────
+const token = localStorage.getItem('tc_token');
+const user  = JSON.parse(localStorage.getItem('tc_user') || 'null');
+if(!token) { window.location.href = 'index.html'; }
+if(user)   { document.getElementById('userPill').textContent = '👤 ' + user.full_name; }
+
+function logout() {
+  localStorage.removeItem('tc_token');
+  localStorage.removeItem('tc_user');
+  window.location.href = 'index.html';
+}
+
+function authHeaders() {
+  return { 'Authorization': 'Bearer ' + token };
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+var state = { tFile: null, vFile: null, tText: '', vText: '', results: null };
+
+// ── Sample data ──────────────────────────────────────────────────────────────
+var SAMPLE_T = 'The supplier shall provide missile guidance components meeting MIL-STD-810G standards for environmental resilience. All materials shall comply with REACH regulations and must be certified by DRDO approved testing laboratories. The minimum operating temperature range shall be -40°C to +85°C without performance degradation. Components must demonstrate a minimum MTBF of 5000 hours under operational field conditions. The supplier shall provide valid ISO 9001:2015 quality certification documentation. All electronic components shall meet ESD sensitivity requirements per JEDEC standard JESD625A. Test reports from NABL accredited facilities are required for all safety-critical components. The vendor must demonstrate manufacturing capacity of minimum 500 units per year. Packaging shall comply with MIL-STD-2073-1E preservation and packaging standards. The vendor shall provide full material traceability documentation for all raw materials. All sub-contractors shall be pre-approved by BDL quality assurance team. Delivery schedule compliance must be demonstrated with verifiable previous order history.';
+var SAMPLE_V = 'Our company holds ISO 9001:2015 and AS9100D certifications with 20 years of defence electronics manufacturing experience. We produce guidance and control components certified to MIL-STD-810G environmental specifications. Operating temperature range of our products is -55°C to +125°C exceeding standard requirements. We are DRDO empanelled and all critical components are tested at NABL accredited laboratories. Our MTBF track record shows average 6200 hours under field conditions. Full compliance with REACH and RoHS material regulations. ESD control per ANSI/ESD S20.20 implemented across all manufacturing areas meeting JEDEC standards. Annual manufacturing capacity of 800 units with expansion potential to 1200. Packaging per MIL-STD-2073 standards with complete material traceability through certified ERP. Regular BDL quality audits welcomed. Delivery performance 97% on-time with documented order history available.';
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function $(id){ return document.getElementById(id); }
+
+function showToast(msg, duration=4000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function switchTab(panel, mode) {
+  $(panel+'Tab-upload').classList.toggle('on', mode==='upload');
+  $(panel+'Tab-paste').classList.toggle('on', mode==='paste');
+  var accent = panel==='t' ? '#2563eb' : '#7c3aed';
+  $(panel+'Tab-upload').style.borderBottomColor = mode==='upload' ? accent : 'transparent';
+  $(panel+'Tab-paste').style.borderBottomColor  = mode==='paste'  ? accent : 'transparent';
+  $(panel+'Tab-upload').style.color = mode==='upload' ? accent : 'var(--g-hint)';
+  $(panel+'Tab-paste').style.color  = mode==='paste'  ? accent : 'var(--g-hint)';
+  $(panel+'Upload').style.display = mode==='upload' ? 'block' : 'none';
+  $(panel+'Paste').style.display  = mode==='paste'  ? 'block' : 'none';
+}
+
+function doDragOver(e, id) { e.preventDefault(); $(id).classList.add('drag'); }
+function doDragLeave(id)  { $(id).classList.remove('drag'); }
+function doDropT(e) { e.preventDefault(); $('tDrop').classList.remove('drag'); handleFileT(e.dataTransfer.files[0]); }
+function doDropV(e) { e.preventDefault(); $('vDrop').classList.remove('drag'); handleFileV(e.dataTransfer.files[0]); }
+
+function handleFileT(file) {
+  if(!file) return;
+  state.tFile = file;
+  state.tText = ''; // will be extracted server-side
+  $('tDropMain').textContent = file.name;
+  $('tDropSub').textContent  = (file.size/1024).toFixed(0) + ' KB · click to replace';
+  $('tDrop').classList.add('has-file');
+  $('tLoaded').style.display = '';
+  $('tWords').textContent = '📎 ' + file.name + ' ready to upload';
+  $('tWords').style.display = '';
+  checkReady();
+}
+
+function handleFileV(file) {
+  if(!file) return;
+  state.vFile = file;
+  state.vText = '';
+  $('vDropMain').textContent = file.name;
+  $('vDrop').classList.add('has-file');
+  $('vLoaded').style.display = '';
+  $('vWords').textContent = '📎 ' + file.name + ' ready to upload';
+  $('vWords').style.display = '';
+  checkReady();
+}
+
+function onTenderInput() {
+  state.tText = $('tText').value;
+  state.tFile = null;
+  if(state.tText.trim()) $('tLoaded').style.display=''; else $('tLoaded').style.display='none';
+  updateWordCount('t', state.tText);
+  checkReady();
+}
+
+function onVendorInput() {
+  state.vText = $('vText').value;
+  state.vFile = null;
+  if(state.vText.trim()) $('vLoaded').style.display=''; else $('vLoaded').style.display='none';
+  updateWordCount('v', state.vText);
+  checkReady();
+}
+
+function updateWordCount(panel, text) {
+  var el = $(panel+'Words');
+  if(text && text.trim()) {
+    el.textContent = '✓ ' + text.split(/\s+/).filter(Boolean).length.toLocaleString() + ' words loaded';
+    el.style.display = '';
+  } else { el.style.display = 'none'; }
+}
+
+function checkReady() {
+  var tOk = state.tFile || state.tText.trim();
+  var vOk = state.vFile || state.vText.trim();
+  $('analyzeBtn').disabled = !(tOk && vOk);
+  $('analyzeHint').style.display = (tOk && vOk) ? 'none' : '';
+}
+
+// ── Stepper ───────────────────────────────────────────────────────────────────
+function setStep(n) {
+  [1,2,3].forEach(function(i) {
+    var done = i < n, active = i === n;
+    var dot = $('dot'+i), lbl = $('lbl'+i);
+    if(done)        { dot.className='step-dot done'; dot.innerHTML='✓'; }
+    else if(active) { dot.className='step-dot active'; dot.textContent=i; }
+    else            { dot.className='step-dot'; dot.textContent=i; }
+    lbl.className = 'step-lbl' + (active?' active':'');
+    $('step'+i).style.display = i===n ? '' : 'none';
+  });
+}
+
+// ── Analysis (calls FastAPI) ──────────────────────────────────────────────────
+async function analyze() {
+  setStep(2);
+
+  // Animate spinner steps
+  var steps = ['ss1','ss2','ss3'];
+  var si = 0;
+  function advanceSpin() {
+    if(si < steps.length) {
+      if(si > 0) { $(steps[si-1]).className = 'spinner-step done'; }
+      $(steps[si]).className = 'spinner-step cur';
+      si++;
+    }
+  }
+  advanceSpin();
+  var spinInt = setInterval(advanceSpin, 2000);
+
+  try {
+    const fd = new FormData();
+    const title = $('reportTitle').value.trim() || 'Untitled Analysis';
+    fd.append('title', title);
+
+    if(state.tFile) {
+      fd.append('tender_file', state.tFile);
+    } else {
+      fd.append('tender_text', state.tText);
+    }
+    if(state.vFile) {
+      fd.append('vendor_file', state.vFile);
+    } else {
+      fd.append('vendor_text', state.vText);
+    }
+
+    const res = await fetch(`${API}/analyze`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: fd,
+    });
+
+    clearInterval(spinInt);
+    steps.forEach(function(s){ $(s).className='spinner-step done'; });
+
+    if(res.status === 401) {
+      logout();
+      return;
+    }
+    if(!res.ok) {
+      const err = await res.json().catch(()=>({detail:'Unknown error'}));
+      throw new Error(err.detail || 'Analysis failed');
+    }
+
+    state.results = await res.json();
+    $('saveChip').style.display = '';
+    renderResults(state.results);
+    setStep(3);
+
+  } catch(err) {
+    clearInterval(spinInt);
+    showToast('⚠ ' + err.message);
+    setStep(1);
+  }
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+var ST = {
+  compliant:       {bar:'#22c55e',bg:'var(--green-bg)',text:'var(--green)',border:'var(--green-bd)',lbl:'Compliant ✓'},
+  partial:         {bar:'#f59e0b',bg:'var(--amber-bg)',text:'var(--amber)',border:'var(--amber-bd)',lbl:'Partial ~'},
+  'non-compliant': {bar:'#ef4444',bg:'var(--red-bg)',  text:'var(--red)',  border:'var(--red-bd)',  lbl:'Gap ✗'},
+};
+
+function renderResults(r) {
+  var sc = r.overall_score >= 60 ? 'var(--green)' : r.overall_score >= 35 ? 'var(--amber)' : 'var(--red)';
+  $('scoreNum').textContent = r.overall_score + '%';
+  $('scoreNum').style.color = sc;
+
+  var badge = $('scoreBadge');
+  if(r.overall_score >= 60)      { badge.style.background='var(--green-bg)'; badge.style.color='var(--green)'; badge.textContent='✓ Eligible to bid'; }
+  else if(r.overall_score >= 35) { badge.style.background='var(--amber-bg)'; badge.style.color='var(--amber)'; badge.textContent='⚠ Review required'; }
+  else                           { badge.style.background='var(--red-bg)';   badge.style.color='var(--red)';   badge.textContent='✗ Strengthen specs'; }
+
+  $('breakdownTitle').textContent = 'Requirement breakdown — ' + r.total_clauses + ' clauses';
+  $('cntC').textContent = r.count_compliant;
+  $('cntP').textContent = r.count_partial;
+  $('cntN').textContent = r.count_non_compliant;
+
+  $('barC').style.width = (r.count_compliant / r.total_clauses * 100) + '%';
+  $('barP').style.width = (r.count_partial   / r.total_clauses * 100) + '%';
+  $('barN').style.width = (r.count_non_compliant / r.total_clauses * 100) + '%';
+
+  var list = $('clauseList'); list.innerHTML = '';
+  r.clauses.forEach(function(cl) {
+    var st = ST[cl.status];
+    var wrap = document.createElement('div');
+    wrap.className = 'clause';
+    wrap.style.borderLeft = '3px solid ' + st.bar;
+
+    var btn = document.createElement('button');
+    btn.className = 'clause-btn';
+    btn.onclick = function(){ toggleClause(cl.clause_number, wrap, cl); };
+
+    var idBadge = document.createElement('span');
+    idBadge.className = 'clause-id';
+    idBadge.style.background = st.bg; idBadge.style.color = st.text;
+    idBadge.textContent = cl.clause_number;
+
+    var txt = document.createElement('span');
+    txt.className = 'clause-text';
+    txt.id = 'ct'+cl.clause_number;
+    txt.textContent = cl.clause_text.slice(0,90) + '…';
+
+    var score = document.createElement('span');
+    score.className = 'clause-score';
+    score.style.background = st.bg; score.style.color = st.text; score.style.border = '1px solid '+st.border;
+    score.textContent = cl.score + '% ' + (cl.status==='compliant'?'✓':cl.status==='partial'?'~':'✗');
+
+    var chev = document.createElement('span');
+    chev.className = 'clause-chevron'; chev.id = 'chev'+cl.clause_number; chev.textContent = '▾';
+
+    btn.appendChild(idBadge); btn.appendChild(txt); btn.appendChild(score); btn.appendChild(chev);
+
+    // Detail panel
+    var detail = document.createElement('div');
+    detail.className = 'clause-detail'; detail.id = 'detail'+cl.clause_number; detail.style.display = 'none';
+
+    var fullTxt = document.createElement('div');
+    fullTxt.className = 'clause-full'; fullTxt.textContent = cl.clause_text;
+
+    // Best semantic match (new!)
+    if(cl.best_vendor_match) {
+      var bmBox = document.createElement('div');
+      bmBox.className = 'best-match';
+      var bmLbl = document.createElement('div');
+      bmLbl.className = 'best-match-lbl'; bmLbl.textContent = '✦ Best semantic match from vendor doc:';
+      bmBox.appendChild(bmLbl);
+      bmBox.appendChild(document.createTextNode('"' + cl.best_vendor_match + '"'));
+      detail.appendChild(fullTxt);
+      detail.appendChild(bmBox);
+    } else {
+      detail.appendChild(fullTxt);
+    }
+
+    // Terms
+    var termsRow = document.createElement('div'); termsRow.className = 'terms-row';
+    if(cl.matched_terms && cl.matched_terms.length) {
+      var g1 = document.createElement('div');
+      var l1 = document.createElement('div'); l1.className='terms-group-lbl'; l1.style.color='var(--green)'; l1.textContent='✓ Terms matched';
+      var tl1 = document.createElement('div'); tl1.className='terms-list';
+      cl.matched_terms.forEach(function(t){ var s=document.createElement('span'); s.className='term-tag'; s.style.background='var(--green-bg)'; s.style.color='var(--green)'; s.textContent=t; tl1.appendChild(s); });
+      g1.appendChild(l1); g1.appendChild(tl1); termsRow.appendChild(g1);
+    }
+    if(cl.missing_terms && cl.missing_terms.length) {
+      var g2 = document.createElement('div');
+      var l2 = document.createElement('div'); l2.className='terms-group-lbl'; l2.style.color='var(--red)'; l2.textContent='✗ Missing terms';
+      var tl2 = document.createElement('div'); tl2.className='terms-list';
+      cl.missing_terms.forEach(function(t){ var s=document.createElement('span'); s.className='term-tag'; s.style.background='var(--red-bg)'; s.style.color='var(--red)'; s.textContent=t; tl2.appendChild(s); });
+      g2.appendChild(l2); g2.appendChild(tl2); termsRow.appendChild(g2);
+    }
+    detail.appendChild(termsRow);
+    wrap.appendChild(btn); wrap.appendChild(detail);
+    list.appendChild(wrap);
+  });
+}
+
+function toggleClause(id, wrap, cl) {
+  var detail = $('detail'+id);
+  var chev   = $('chev'+id);
+  var txt    = $('ct'+id);
+  var open   = detail.style.display === 'none';
+  detail.style.display = open ? '' : 'none';
+  chev.textContent = open ? '▴' : '▾';
+  if(cl) txt.textContent = open ? cl.clause_text : (cl.clause_text.slice(0,90)+'…');
+}
+
+// ── Misc ──────────────────────────────────────────────────────────────────────
+function loadSample() {
+  state.tText = SAMPLE_T; state.vText = SAMPLE_V;
+  state.tFile = null; state.vFile = null;
+  switchTab('t','paste'); switchTab('v','paste');
+  $('tText').value = SAMPLE_T; $('vText').value = SAMPLE_V;
+  $('tLoaded').style.display=''; $('vLoaded').style.display='';
+  updateWordCount('t',SAMPLE_T); updateWordCount('v',SAMPLE_V);
+  $('reportTitle').value = 'Missile Guidance Components RFQ — Sample';
+  checkReady();
+}
+
+function copyReport() {
+  var r = state.results; if(!r) return;
+  var lines = [
+    'BDL TENDER COMPLIANCE REPORT',
+    'Generated: ' + new Date().toLocaleString(),
+    'Overall Score: ' + r.overall_score + '%',
+    'Compliant: ' + r.count_compliant + ' | Partially Met: ' + r.count_partial + ' | Not Addressed: ' + r.count_non_compliant,
+    'Engine: sentence-transformers/all-MiniLM-L6-v2',
+    '',
+  ];
+  r.clauses.forEach(function(c) {
+    lines.push('[Req ' + c.clause_number + '] ' + c.status.toUpperCase() + ' (' + c.score + '%)');
+    lines.push(c.clause_text.slice(0,120) + '…');
+    if(c.best_vendor_match) lines.push('Semantic match: "' + c.best_vendor_match + '"');
+    lines.push('Matched: '+(c.matched_terms.join(', ')||'none'));
+    lines.push('Missing: '+(c.missing_terms.join(', ')||'none'));
+    lines.push('');
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(function(){
+    var btn = $('copyBtn'); btn.textContent='✓ Copied!'; btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent='📋 Copy report'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+function resetApp() {
+  state = { tFile:null, vFile:null, tText:'', vText:'', results:null };
+  $('tText').value=''; $('vText').value=''; $('reportTitle').value='';
+  $('tLoaded').style.display='none'; $('vLoaded').style.display='none';
+  $('tWords').style.display='none';  $('vWords').style.display='none';
+  $('tDropMain').textContent='Drop file or click to browse';
+  $('tDrop').classList.remove('has-file');
+  $('saveChip').style.display='none';
+  checkReady(); setStep(1);
+}
+
+// Init
+switchTab('t','upload');
+switchTab('v','paste');
+setStep(1);
+</script>
+</body>
+</html>

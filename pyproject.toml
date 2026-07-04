@@ -1,0 +1,26 @@
+[project]
+name = "tendercheck-backend"
+version = "0.1.0"
+description = "BDL TenderCheck — FastAPI backend with semantic NLP"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "sqlalchemy>=2.0",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7",
+    "python-multipart>=0.0.9",
+    "pypdf>=4.0",
+    "pdfminer.six>=20221105",
+    "sentence-transformers>=2.7",
+    "torch>=2.0",
+    "numpy>=1.20",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+# Use Python 3.11 for full compatibility with ML packages
+python-preference = "only-managed"
